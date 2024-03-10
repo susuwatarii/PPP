@@ -1,7 +1,7 @@
 import numpy as np
+from pieces import Rook, Knight, Bishop, Queen, King, Pawn
 from constants import WHITE, BLACK  # такой вариант позволяет потом подключать файлик с 'константами' к другим файликам, 
                                     # что упрощает работу и делает ее более безопасной
-from pieces import Rook, Knight, Bishop, Queen, King, Pawn
 
 
 # Доска для шахмат
@@ -88,8 +88,14 @@ class Board(object):
     def move_piece(self, from_coords, to_coords):
         # сделать ход, записать в историю (если фигура съедена, то удалить ее), кол-во ходов в партии +1
         # ход получилось сделать - True, нельзя сделать такой ход - False
+        
+        
         if self.turn == WHITE:  # если сейчас ход белых
-            wh_p = self.get_piece(from_coords, WHITE)  
+            wh_p = self.get_piece(from_coords, WHITE)
+            tmp_p = self.get_piece(to_coords, BLACK)
+            if tmp_p and tmp_p.image == ' k ':  # короля есть нельзя
+                print('\n ~ несъедобно ! ~ ')
+                return False
             if wh_p:  # если выбранная фигура существует
                 if wh_p.move(to_coords[0], to_coords[1], (self.get_white_locations(), self.get_black_locations())):  # если правильный ход
                     self.history.append([wh_p.image, from_coords, to_coords])  
@@ -106,6 +112,10 @@ class Board(object):
 
         else:  # если сейчас ход черных (аналогично белым)
             bl_p = self.get_piece(from_coords, BLACK)
+            tmp_p = self.get_piece(to_coords, WHITE)
+            if tmp_p and tmp_p.image == ' K ':  # короля есть нельзя
+                print('\n ~ несъедобно ! ~ ')
+                return False
             if bl_p:
                 if bl_p.move(to_coords[0], to_coords[1], (self.get_white_locations(),self.get_black_locations())):
                     self.history.append([bl_p.image, from_coords, to_coords])
@@ -214,17 +224,29 @@ class Board(object):
             
         # указываем возможные ходы для выбранной фигуры 
         if coords:
-            moves_lst = self.get_piece(coords, self.turn).get_moves_list(self.get_white_locations(), self.get_black_locations())
-            for pos in moves_lst:
-                y, x = pos
-                d_board[x+2, y+2] = f':{d_board[x+2, y+2][1]}:'
-                
+            if self.turn == WHITE:
+                cur_pieces_coords = self.get_white_locations()
+            else:
+                cur_pieces_coords = self.get_black_locations()
+            if coords in cur_pieces_coords:
+                moves_lst = self.get_piece(coords, self.turn).get_moves_list(self.get_white_locations(), self.get_black_locations())
+                for pos in moves_lst:
+                    y, x = pos
+                    d_board[x+2, y+2] = f':{d_board[x+2, y+2][1]}:'
+            else:
+                print('\n ~ на выбранной позиции либо нет фигуры, либо эта фигура не ваша ! ~')
+        
         # указываем фигуры под боем
         if in_danger:
             in_danger_lst = self.is_in_danger()
             for pos in in_danger_lst:
                 y, x = pos
                 d_board[x+2, y+2] = f'!{d_board[x+2, y+2][1]}!'
+                # отдельно указываем шах
+                tmp_piece_img = self.get_piece(pos, self.turn).image
+                if tmp_piece_img == ' K ' or tmp_piece_img == ' k ':
+                    print('\n ! Шах !')  # под угрозой взятия на следующем ходу / шах
+                    d_board[x+2, y+2] = f'<{d_board[x+2, y+2][1]}>'
         
         # печатаем доску 
         print()
@@ -260,21 +282,28 @@ class Board(object):
                 case '3':  # фигуры под ударом
                     self.print_board(in_danger=True)
                 case '4':  # откат хода/ходов
-                    try:
-                        self.moves_back(int(input('сколько ходов? ')))                        
-                    except:
-                        print('\n ~ не получилось сделать откат ходов! ~ ')
+                    #try:
+                    self.moves_back(int(input('сколько ходов? ')))                        
+                    #except:
+                        #print('\n ~ не получилось сделать откат ходов! ~ ')
                     self.print_board()
                     
             print(f'-- {self.turn} --')
             choice = input(menue)
             
         # заканчиваем игру
-        choice_2 = input('\n1) сдаться\n2) ничья\n? ')
-        if choice_2 == '2':  # если выбрали ничью
-            print(f'----------------------------\n  ничья !')
-        else:  # если выбрали сдаться или несуществующий вариант
+        choice_2 = input('\n0) вы выиграли\n1) вы сдаетесь\n2) вы согласны на ничью\n? ')
+        if choice_2 == '0':
+            if self.turn != WHITE:
+                print(f'----------------------------\n  черные выиграли !')
+            else:
+                print(f'----------------------------\n  белые выиграли !')
+        elif choice_2 == '1':
             if self.turn != WHITE:
                 print(f'----------------------------\n  белые выиграли !')
             else:
                 print(f'----------------------------\n  черные выиграли !')
+        else:  # если выбрали ничью или несуществующий вариант
+            print(f'----------------------------\n  ничья !')
+            
+                

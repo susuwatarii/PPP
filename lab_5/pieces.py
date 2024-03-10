@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from constants import WHITE, BLACK  # такой вариант позволяет потом подключать файлик с 'константами' к другим файликам, 
                                     # что упрощает работу и делает ее более безопасной
 
-
 # Фигура (родительский класс)
 class Piece(ABC):
     def __init__(self, color, x, y):
